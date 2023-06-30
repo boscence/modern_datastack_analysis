@@ -21,14 +21,15 @@ def get_json(stack_url):
     stack_content = parsed_html.find_all("script", type="application/json")
     json_data = json.loads(stack_content[0].text)
 
+    company_data = json_data['props']['pageProps']['stack']
+    stack_data = json_data['props']['pageProps']['dataStack']
 
-    return json_data
-    #print(type(scripts[0].text))
-    #print(json_data.keys())
-    #print(json_data['props']['pageProps']['dataStack'][0])
-    #print(json_data['props']['pageProps']['dataStack'][1])
-    #print(json_data['props']['pageProps']['dataStack'][2])
-    #print(json_data['props']['pageProps']['dataStack'][3])
+    company_data['stack_data'] = stack_data
+
+    return company_data
+    #print(type(json_data[0].text))
+    #print(company_data)
+    #print(json_data['props']['pageProps']['dataStack'])
 
 
 def get_json_file(json_data, stack_url):
