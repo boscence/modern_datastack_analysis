@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import pandas as pd
 
 
 
@@ -53,3 +54,26 @@ def get_json_file(json_data, stack_url):
     json_dumped = json.dumps(json_data)
     with open(f"data/{stack_name}.json", "w") as f:
         f.write(json_dumped)
+
+
+def load_json(json_file):
+    loaded_json = open(f"data/{json_file}")
+    data = json.load(loaded_json)
+    return data
+
+def get_company_table(data):
+    company_data = pd.json_normalize(data)
+    return company_data
+
+def get_stack_table(data, company_data):
+    stack_data = pd.json_normalize(data['stack_data'],"children")
+    stack_data["_id"] = company_data["_id"][0]
+    stack_data["companyName"] = company_data["companyName"][0]
+    stack_data["verified"] = company_data["verified"][0]
+    return stack_data
+
+
+def write_parquet(stack_data,json_file):
+    file_name = json_file.split(".")[0]
+    stack_data.to_parquet(f'data/stack_data/{file_name}.parquet.gzip',
+              compression='gzip')

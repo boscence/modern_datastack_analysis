@@ -4,3 +4,13 @@ src/__pycache__/
 
 /data/*.json
 !data/justos.json
+
+/data/*.gzip
+!data/justos.gzip
+
+/data/stack_data/*.gzip
+!data/stack_data/justos.gzip
+
+analysis/.ipynb_checkpoints
+
+.vscode/
