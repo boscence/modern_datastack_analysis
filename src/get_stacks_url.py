@@ -15,7 +15,7 @@ import config
 def get_stack_html_data(url):
 
     """
-    This function gets the HTML data from ttps://www.moderndatastack.xyz/stacks.
+    This function gets the HTML data from https://www.moderndatastack.xyz/stacks.
 
     Args:
         url: The URL (https://www.moderndatastack.xyz/stacks)

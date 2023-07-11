@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import pandas as pd
+from datetime import date
 
 
 
@@ -45,24 +46,25 @@ def get_json_file(json_data, stack_url):
         None.
 
     """
-    
-    # Get the stack's name frm the url 
+    today_date = date.today().strftime(format = "%Y%m%d")
+    # Get the stack's name from the url 
     stack_url_split = stack_url.split("/")
     stack_name = stack_url_split[-1]
 
     # Write the data to json
     json_dumped = json.dumps(json_data)
-    with open(f"data/{stack_name}.json", "w") as f:
+    with open(f"data/source/mds/source_mds_{today_date}__{stack_name}.json", "w") as f:
         f.write(json_dumped)
 
 
 def load_json(json_file):
-    loaded_json = open(f"data/{json_file}")
+    loaded_json = open(f"data/source/mds/{json_file}")
     data = json.load(loaded_json)
     return data
 
 def get_company_table(data):
     company_data = pd.json_normalize(data)
+    company_data['load_date'] = date.today().strftime(format = "%Y%m%d")
     return company_data
 
 def get_stack_table(data, company_data):
@@ -70,10 +72,20 @@ def get_stack_table(data, company_data):
     stack_data["_id"] = company_data["_id"][0]
     stack_data["companyName"] = company_data["companyName"][0]
     stack_data["verified"] = company_data["verified"][0]
+    stack_data['load_date'] = date.today().strftime(format = "%Y%m%d")
     return stack_data
 
 
-def write_parquet(stack_data,json_file):
+def write_stack_parquet(stack_data,json_file):
+    today_date = date.today().strftime(format = "%Y%m%d")
     file_name = json_file.split(".")[0]
-    stack_data.to_parquet(f'data/stack_data/{file_name}.parquet.gzip',
+    stack_data.to_parquet(f'data/staging/mds/stack/stg_mds_{today_date}__{file_name}_stack.parquet.gzip',
               compression='gzip')
+
+
+def write_company_parquet(company_data,json_file):
+    today_date = date.today().strftime(format = "%Y%m%d")
+    file_name = json_file.split(".")[0]
+    company_data[['_id','companyName','description','organizationId','verified']].to_parquet(f'data/staging/mds/company/stg_mds_{today_date}__{file_name}_company.parquet.gzip',
+              compression='gzip')
+    
