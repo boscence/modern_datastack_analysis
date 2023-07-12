@@ -3,10 +3,13 @@ from bs4 import BeautifulSoup
 import json
 import pandas as pd
 from datetime import date
+import config
 
 
+TODAYS_DATE = date.today().strftime('%Y%m%d')
 
-def get_json(stack_url):
+
+def get_mds_json(stack_url):
 
     """Gets the JSON data from a stack's URL.
 
@@ -14,8 +17,7 @@ def get_json(stack_url):
         stack_url (str): The URL of the stack.
 
     Returns:
-        The JSON data.
-
+        company_data (dict): The JSON data for a stack as a dict.
     """
 
     response = requests.get(stack_url)
@@ -29,13 +31,12 @@ def get_json(stack_url):
     company_data['stack_data'] = stack_data
 
     return company_data
-    #print(type(json_data[0].text))
-    #print(company_data)
-    #print(json_data['props']['pageProps']['dataStack'])
 
 
-def get_json_file(json_data, stack_url):
-    """Writes the stack data to a JSON file in the datalake.
+
+def write_mds_source_data(json_data, stack_url):
+    """Writes the stack data to a JSON file in 
+    the datalake's source directory.
 
     Args:
         json_data (dict): A dict containing the stack data .
@@ -46,50 +47,75 @@ def get_json_file(json_data, stack_url):
         None.
 
     """
-    today_date = date.today().strftime('%Y%m%d')
     # Get the stack's name from the url 
     stack_url_split = stack_url.split("/")
     stack_name = stack_url_split[-1]
 
     # Write the data to json
     json_dumped = json.dumps(json_data)
-    with open(f"data/source/mds/source_mds_{today_date}__{stack_name}.json", "w") as f:
+    with open(f"{config.source_path_mds}/source_mds_{TODAYS_DATE}__{stack_name}.json", "w") as f:
         f.write(json_dumped)
 
 
-def load_json(json_file):
-    loaded_json = open(f"data/source/mds/{json_file}")
-    data = json.load(loaded_json)
-    return data
+def load_mds_source(json_data):
+    """A module to load the json data file from source,
+       ready for processing 
 
-def get_company_table(data):
-    company_data = pd.json_normalize(data)
-    company_data['load_date'] = date.today().strftime("%Y%m%d")
-    return company_data
+    Args:
+        json_data (dict): A dict containing the stack data.
 
-def get_stack_table(data, company_data):
-    stack_data = pd.json_normalize(data['stack_data'],"children")
-    stack_data["_id"] = company_data["_id"][0]
-    stack_data["companyName"] = company_data["companyName"][0]
-    stack_data["verified"] = company_data["verified"][0]
-    stack_data['load_date'] = date.today().strftime("%Y%m%d")
-    return stack_data
+    Returns:
+        loaded_json (dict): a dict loaded from the json source
+
+    """
+    opened_json = open(f"{config.source_path_mds}/{json_data}")
+    loaded_json = json.load(opened_json)
+    return loaded_json
+
+def get_company_table(loaded_json):
+    """Isolate and create a pandas dataframe
+       for the company
+
+    Args:
+        loaded_json (dict): a dict loaded from the json source
+
+    Returns:
+        company_df (pd.dataframe): a pandas dataframe for the company
+
+    """
+    company_df = pd.json_normalize(loaded_json)
+    company_df['load_date'] = TODAYS_DATE
+    return company_df
+
+def get_stack_table(loaded_json, company_df):
+    """Isolate and create a pandas dataframe
+       for the stack data
+
+    Args:
+        loaded_json (dict): a dict loaded from the json source
+        company_df (pd.dataframe): a pandas dataframe for the company
+
+    Returns:
+        stack_df (pd.dataframe): dataframe for the stack
+
+    """
+    stack_df = pd.json_normalize(loaded_json['stack_data'],"children")
+    stack_df["_id"] = company_df["_id"][0]
+    stack_df["companyName"] = company_df["companyName"][0]
+    stack_df["verified"] = company_df["verified"][0]
+    stack_df['load_date'] = TODAYS_DATE
+    return stack_df
 
 
-def write_stack_parquet(stack_data,json_file):
-    today_date = date.today().strftime("%Y%m%d")
+def write_stack_parquet(stack_df,json_file):
+
     file_name = json_file.split(".")[0].split("__")[1]
-    stack_data.to_parquet(f'data/staging/mds/stack/stg_mds_{today_date}_{file_name}__stack.parquet.gzip',
+    stack_df.to_parquet(f'{config.stage_path_stack}/stg_mds_{TODAYS_DATE}_{file_name}__stack.parquet.gzip',
               compression='gzip')
 
 
-def write_company_parquet(company_data,json_file):
-    today_date = date.today().strftime("%Y%m%d")
+def write_company_parquet(company_df,json_file):
     file_name = json_file.split(".")[0].split("__")[1]
-    company_data[['_id',
-                  'companyName',
-                  'description',
-                  'organizationId',
-                  'verified']].to_parquet(f'data/staging/mds/company/stg_mds_{today_date}_{file_name}__company.parquet.gzip',
+    company_df[config.company_cols].to_parquet(f'{config.stage_path_company}/stg_mds_{TODAYS_DATE}_{file_name}__company.parquet.gzip',
               compression='gzip')
     
