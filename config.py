@@ -13,3 +13,8 @@ company_cols = ['_id',
                   'description',
                   'organizationId',
                   'verified']
+
+gcp_project_id = "modern-datastack-analysis"
+bucket_name_source_mds = "datalake--sources"
+bucket_source_dir_mds = "mds/"
+bucket_source_dir_mds_combined = "mds/combined/"

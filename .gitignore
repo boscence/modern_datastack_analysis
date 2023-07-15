@@ -10,6 +10,9 @@ src/__pycache__/
 !/data/staging/mds/company/justos.gzip
 !/data/staging/mds/stack/justos.gzip
 
+analysis/cache/
+analysis/pandasai.log
+
 analysis/.ipynb_checkpoints
 
 .vscode/
