@@ -29,6 +29,7 @@ def get_mds_json(stack_url):
     stack_data = json_data['props']['pageProps']['dataStack']
 
     company_data['stack_data'] = stack_data
+    company_data['extract_date'] = TODAYS_DATE
 
     return company_data
 
